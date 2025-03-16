@@ -34,8 +34,6 @@ class DailyQuestsApp(Gtk.Application):
         self.win = builder.get_object("quest_window")
         self.win.show_all()
 
-        self.status = XApp.StatusIcon()
-        self.status.connect("activate", self.onClickStatusIcon)
         return
 
     def getCurrentDateAsSeconds(self):
@@ -72,9 +70,6 @@ class DailyQuestsApp(Gtk.Application):
         self.loadListByDate()
         return
 
-    def onClickStatusIcon(self, button, time, data):
-        self.win.show_all()
-        return
 
     def onDestroy(self, *args):
         Gtk.main_quit()
@@ -104,7 +99,6 @@ class DailyQuestsApp(Gtk.Application):
         return
 
     def taskKeyPress(self, widget, event):
-        #print(widget, event)
         return
 
 class ListItem(Gtk.ListBoxRow):

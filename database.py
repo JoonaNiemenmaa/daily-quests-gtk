@@ -1,9 +1,14 @@
+import os
 import sqlite3
+
+PATH = os.path.expanduser("~/.dailyquests/")
+DATABASE_PATH = os.path.join(PATH, "tasks.db")
 
 class TasksDatabase():
     def __init__(self):
-        self.DATABASE_PATH = "tasks.db"
-        self.connection = sqlite3.connect(self.DATABASE_PATH)
+        if not os.path.exists(PATH):
+            os.mkdir(PATH)
+        self.connection = sqlite3.connect(DATABASE_PATH)
         self.cursor = self.connection.cursor()
         if not self.tasksTableExists():
             self.initDatabase()
