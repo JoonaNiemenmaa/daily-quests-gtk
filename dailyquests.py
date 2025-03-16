@@ -6,6 +6,9 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("XApp", "1.0")
 from gi.repository import Gtk, XApp
 
+DATE_FORMAT = "%d/%m/%Y"
+DAY_IN_SECONDS = 60 * 60 * 24
+
 class DailyQuestsApp(Gtk.Application):
     def __init__(self):
         super().__init__()
@@ -15,13 +18,14 @@ class DailyQuestsApp(Gtk.Application):
         builder.connect_signals(self)
 
         self.list_box = builder.get_object("list_box")
-        self.task_input_entry = builder.get_object("task_input_entry")
         
         self.db = database.TasksDatabase()
 
-        self.date = time.strftime("%d/%m/%Y", time.localtime())
+        self.current_date = self.getCurrentDateAsSeconds()
+        self.date = self.current_date
+
         self.date_label = builder.get_object("date_label")
-        self.date_label.set_label(self.date)
+        self.updateDateLabel()
 
         self.db.moveIncompleteTasks(self.date)
 
@@ -32,6 +36,14 @@ class DailyQuestsApp(Gtk.Application):
 
         self.status = XApp.StatusIcon()
         self.status.connect("activate", self.onClickStatusIcon)
+        return
+
+    def getCurrentDateAsSeconds(self):
+        date = time.mktime(time.strptime(time.strftime("%d/%m/%Y", time.localtime()), "%d/%m/%Y"))
+        return date
+
+    def updateDateLabel(self):
+        self.date_label.set_label(time.strftime(DATE_FORMAT, time.localtime(self.date)))
         return
 
     def loadListByDate(self):
@@ -49,16 +61,14 @@ class DailyQuestsApp(Gtk.Application):
         return
 
     def incrementDate(self, button):
-        new_date = time.mktime(time.strptime(self.date, "%d/%m/%Y")) + (60 * 60 * 24)
-        self.date = time.strftime("%d/%m/%Y", time.localtime(new_date))
-        self.date_label.set_label(self.date)
+        self.date += DAY_IN_SECONDS
+        self.updateDateLabel()
         self.loadListByDate()
         return
 
     def decrementDate(self, button):
-        new_date = time.mktime(time.strptime(self.date, "%d/%m/%Y")) - (60 * 60 * 24)
-        self.date = time.strftime("%d/%m/%Y", time.localtime(new_date))
-        self.date_label.set_label(self.date)
+        self.date -= DAY_IN_SECONDS
+        self.updateDateLabel()
         self.loadListByDate()
         return
 
@@ -98,7 +108,7 @@ class DailyQuestsApp(Gtk.Application):
         return
 
 class ListItem(Gtk.ListBoxRow):
-    def __init__(self, taskid, task, state):
+    def __init__(self, taskid: int, task: str, state: bool):
         self.taskid = taskid
         super().__init__()
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -114,13 +124,11 @@ class ListItem(Gtk.ListBoxRow):
         self.add(box)
         return
     
-    def getTaskId(self):
+    def getTaskId(self) -> int:
         return self.taskid
 
-    def getCheckButton(self):
+    def getCheckButton(self) -> Gtk.CheckButton:
         return self.check_button
     
-
-
 app = DailyQuestsApp()
 Gtk.main()
