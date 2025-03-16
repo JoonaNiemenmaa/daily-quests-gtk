@@ -23,7 +23,9 @@ class DailyQuestsApp(Gtk.Application):
         self.date_label = builder.get_object("date_label")
         self.date_label.set_label(self.date)
 
-        self.loadListByDate(self.date)
+        self.db.moveIncompleteTasks(self.date)
+
+        self.loadListByDate()
         
         self.win = builder.get_object("quest_window")
         self.win.show_all()
@@ -32,12 +34,17 @@ class DailyQuestsApp(Gtk.Application):
         self.status.connect("activate", self.onClickStatusIcon)
         return
 
-    def loadListByDate(self, date):
+    def loadListByDate(self):
         for row in self.list_box.get_children():
             self.list_box.remove(row)
-        tasks = self.db.tasksByDate(date)
+        tasks = self.db.tasksByDate(self.date)
         for row in tasks:
-            self.list_box.add(ListItem(int(row[0]), row[1], bool(row[2])))
+            taskid = int(row[0])
+            task = row[1]
+            status = bool(row[2])
+            list_item = ListItem(taskid, task, status)
+            list_item.getCheckButton().connect("toggled", self.updateTask, taskid)
+            self.list_box.add(list_item)
         self.list_box.show_all()
         return
 
@@ -45,14 +52,14 @@ class DailyQuestsApp(Gtk.Application):
         new_date = time.mktime(time.strptime(self.date, "%d/%m/%Y")) + (60 * 60 * 24)
         self.date = time.strftime("%d/%m/%Y", time.localtime(new_date))
         self.date_label.set_label(self.date)
-        self.loadListByDate(self.date)
+        self.loadListByDate()
         return
 
     def decrementDate(self, button):
         new_date = time.mktime(time.strptime(self.date, "%d/%m/%Y")) - (60 * 60 * 24)
         self.date = time.strftime("%d/%m/%Y", time.localtime(new_date))
         self.date_label.set_label(self.date)
-        self.loadListByDate(self.date)
+        self.loadListByDate()
         return
 
     def onClickStatusIcon(self, button, time, data):
@@ -66,8 +73,10 @@ class DailyQuestsApp(Gtk.Application):
     def addTask(self, entry):
         input = entry.get_text()
         if (input != ""):
-            taskid = len(self.list_box) - 1
-            self.list_box.add(ListItem(taskid, input, False))
+            taskid = len(self.list_box)
+            list_item = ListItem(taskid, input, False)
+            list_item.getCheckButton().connect("toggled", self.updateTask, taskid)
+            self.list_box.add(list_item)
             self.list_box.show_all()
             self.db.insertTask(taskid, self.date, input)
         entry.set_text("")
@@ -78,6 +87,10 @@ class DailyQuestsApp(Gtk.Application):
         self.db.deleteTask(remove.getTaskId(), self.date)
         self.list_box.remove(remove)
         self.list_box.show_all()
+        return
+    
+    def updateTask(self, button, taskid):
+        self.db.updateTask(taskid, self.date, button.get_active())
         return
 
     def taskKeyPress(self, widget, event):
@@ -91,7 +104,10 @@ class ListItem(Gtk.ListBoxRow):
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
 
         hor_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=20)
-        hor_box.add(Gtk.CheckButton())
+        self.check_button = Gtk.CheckButton();
+        self.check_button.set_active(state)
+        hor_box.add(self.check_button)
+
         hor_box.add(Gtk.Label(label=task))
         box.add(hor_box)
 
@@ -100,6 +116,11 @@ class ListItem(Gtk.ListBoxRow):
     
     def getTaskId(self):
         return self.taskid
+
+    def getCheckButton(self):
+        return self.check_button
+    
+
 
 app = DailyQuestsApp()
 Gtk.main()

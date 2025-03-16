@@ -26,6 +26,12 @@ class TasksDatabase():
         self.connection.commit()
         return
 
+    def moveIncompleteTasks(self, date):
+        tasks_to_move = self.cursor.execute("SELECT taskid, date FROM Tasks WHERE status = 0 AND date != ?;", [(date)])
+        print(tasks_to_move.fetchall())
+        self.connection.commit()
+        return
+
     def insertTask(self, taskid, date, task):
         self.cursor.execute("INSERT INTO Tasks (taskid, date, task) VALUES (?, ?, ?);", [(taskid), (date), (task)])
         self.connection.commit()
@@ -41,6 +47,11 @@ class TasksDatabase():
         self.cursor.execute("DELETE FROM Tasks WHERE taskid = ? AND date = ?;", [(taskid), (date)])
         for i in range(rows_to_update):
             self.cursor.execute("UPDATE Tasks SET taskid = ? WHERE taskid = ? AND date = ?;", [(taskid + i), (taskid + i + 1), (date)])
+        self.connection.commit()
+        return
+
+    def updateTask(self, taskid, date, status):
+        self.cursor.execute("UPDATE Tasks SET status = ? WHERE taskid = ? AND date = ?;", [(status), (taskid), (date)])
         self.connection.commit()
         return
 
